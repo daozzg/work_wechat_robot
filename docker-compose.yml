@@ -1,0 +1,5 @@
+work_wechat_robot:
+  build: .
+  #image: daozzg/work-wechat-robot
+  ports:
+    - "8888:8080"

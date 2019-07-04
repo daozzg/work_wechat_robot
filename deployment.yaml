@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: work-wechat-robot
+  namespace: monitoring
+  labels:
+    app: work-wechat-robot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: work-wechat-robot
+  template:
+    metadata:
+      labels:
+        app: work-wechat-robot
+    spec:
+      serviceAccountName: work-wechat-robot
+      containers:
+        - name: work-wechat-robot
+          image: daozzg/work-wechat-robot
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: work-wechat-robot
+  namespace: monitoring
+spec:
+  ports:
+  - name: web
+    port: 80
+    targetPort: 8080
+  selector:
+    app: work-wechat-robot
