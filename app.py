@@ -8,9 +8,9 @@
 @time: 2019/7/4 4:56 PM
 """
 
-
 from flask import Flask, request, Response
 import requests
+import arrow
 import logging
 import json
 import os
@@ -18,7 +18,7 @@ import os
 LOG = logging.getLogger(__name__)
 app = Flask(__name__)
 
-URL = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={}"
+WECAHT_API = os.getenv('WECAHT_API', "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={}")
 KEY = os.getenv('ROBOT_KEY', '')
 ALEAT_MANAGER_URL = os.getenv('ALEAT_MANAGER_URL', '')
 
@@ -34,7 +34,7 @@ def send_wechat_msg(key, message):
         key = KEY
     if not isinstance(message, str):
         data = message
-    respose = requests.post(URL.format(key), json=data)
+    respose = requests.post(WECAHT_API.format(key), json=data)
     LOG.info("send message result: %s:%s", respose.status_code, respose.text)
     if respose.status_code == 200:
         return True
@@ -58,24 +58,31 @@ def prometheus_webhook():
         labels = alert.get('labels', {})
         annotations = alert.get('annotations', {})
 
-        title = "{namespace}{resource_name}: {alertname}".format(
+        resource = "{namespace}{resource_name}".format(
             namespace="{}/".format(labels.get("namespace")) if labels.get("namespace") else '',
-            resource_name=labels.get("pod", labels.get("pod_name", labels.get("instance", 'cluster'))),
-            alertname=labels.get("alertname", ' '))
+            resource_name=labels.get("pod", labels.get("pod_name", labels.get("instance", 'cluster'))))
 
         message = annotations.get("message", annotations.get("description", ''))
-
-        msg += '''
-<font color="{_status_color}">{_status}</font>: [{_title}]({alert_namager_url}) \n
+        action = annotations.get("Action", '')
+        runbook_url = annotations.get("runbook_url", '')
+        action_msg = ""
+        if action:
+            if runbook_url:
+                action_msg = ">处理建议: {}[more]({})  ".format(action, runbook_url)
+            else:
+                action_msg = '''>处理建议: <font color="comment">{}</font>  '''.format(action)
+        msg = '''
+<font color="{_status_color}">{_status}</font>: [{_title}]({_alert_namager_url})  
+>级别: <font color="comment">{_severity}</font>  
+>资源: <font color="comment">{_resource}</font>  
 >描述: <font color="comment">{_message}</font>  
->开始时间: <font color="comment">{startsAt}</font>  
->结束时间: <font color="comment">{endsAt}</font>  
+{_action_msg}  
 \n
-        '''.format(_title=title, _status_color=status_color, _status=status, _message=message,
-                   startsAt=alert.get('startsAt', ' '), endsAt=alert.get('endsAt', ' '),
-                   alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else alert.get('generatorURL', ' '))
+'''.format(_title=labels.get("alertname", ' '), _resource=resource, _status_color=status_color, _status=status,
+           _message=message, _action_msg=action_msg, _severity=annotations.get("Severity", ' '),
+           _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else alert.get('generatorURL', ' '))
 
-    result = send_wechat_msg(receiver, msg)
+        result = send_wechat_msg(receiver, msg)
 
     return get_result(error=result)
 

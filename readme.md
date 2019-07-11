@@ -42,6 +42,13 @@ docker run -d --name=work_wechat_robot -p 8080:8080 daozzg/work_wechat_robot
     "http_config":
        "bearer_token": "<your robot key>"
 ```
+1. 建议配置Prometheus 启动参数 `--web.external-url`,这样点击告警名能够跳转到 prometheus查看告警到监控信息(如果是prometheus-operator,增加spec.externalUrl)
+### 规范
+为了更好的显示告警信息，请参考[告警规范 Kubernetes Alert Runbooks](https://github.com/kubernetes-monitoring/kubernetes-mixin/blob/master/runbook.md#kubernetes-alert-runbooks):
+如果按照规范，会接收到如下的告警信息
+![alert_dmeo](./docs/image/alert_demo_pc.png)
+
+
 
 ### 开发
 ```
@@ -56,3 +63,4 @@ pip install -r requirements.txt
 python app.py
 
 ```
+更新依赖
