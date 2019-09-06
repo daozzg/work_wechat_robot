@@ -79,20 +79,21 @@ def prometheus_webhook():
         action_msg = ""
         if action:
             if runbook_url:
-                action_msg = ">处理建议: {}[more]({})  ".format(action, runbook_url)
+                action_msg = ">处理建议: <font color=\"comment\"> {}</font> [more]({})  ".format(action, runbook_url)
             else:
                 action_msg = '''>处理建议: <font color="comment">{}</font>  '''.format(action)
+
         msg = '''
 <font color="{_status_color}">{_status}</font>: [{_title}]({_alert_namager_url})  
 >级别: <font color="comment">{_severity}</font>  
->资源: <font color="comment">{_resource}</font>  
->描述: <font color="comment">{_message}</font>  
+>资源: <font color="comment">{_resource}</font> [监控源]({_source})  
+>描述: <font color="comment">{_message}</font> 
 {_action_msg}  
 \n
 '''.format(_title=labels.get("alertname", ' '), _resource=resource, _status_color=status_color, _status=status,
-           _message=message, _action_msg=action_msg,
-           _severity=try_get_value(labels, ["Severity", "severity"], ""),
-           _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else alert.get('generatorURL', ' '))
+           _message=message, _source=annotations.get('generatorURL'), _action_msg=action_msg,
+           _severity=try_get_value(labels, ["Severity", "severity"], "critical"),
+           _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else alert.get('externalURL', ' '))
 
         result = send_wechat_msg(receiver, msg)
 
