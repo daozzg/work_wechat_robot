@@ -91,9 +91,9 @@ def prometheus_webhook():
 {_action_msg}  
 \n
 '''.format(_title=labels.get("alertname", ' '), _resource=resource, _status_color=status_color, _status=status,
-           _message=message, _source=annotations.get('generatorURL'), _action_msg=action_msg,
+           _message=message, _source=alert.get('generatorURL'), _action_msg=action_msg,
            _severity=try_get_value(labels, ["Severity", "severity"], "critical"),
-           _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else alert.get('externalURL', ' '))
+           _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else data.get('externalURL', ' '))
 
         result = send_wechat_msg(receiver, msg)
 
