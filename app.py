@@ -14,6 +14,7 @@ import arrow
 import logging
 import json
 import os
+from config import alert_config as config
 
 LOG = logging.getLogger(__name__)
 app = Flask(__name__)
@@ -72,27 +73,36 @@ def prometheus_webhook():
         resource = "{namespace}{resource_name}".format(
             namespace="{}/".format(labels.get("namespace")) if labels.get("namespace") else '',
             resource_name=resource_name)
+        startsAt = arrow.get(alert.get("startsAt", ' '))
 
-        message = try_get_value(annotations, ["message", "description"], "")
+        description = try_get_value(annotations, ["description_cn"],
+                                    config.get(labels.get("alertname", ''), config.get('default'))['description'])
+        runbook = try_get_value(annotations, ["runbook_cn"],
+                                config.get(labels.get("alertname", ''), config.get('default'))['runbook'])
+        alertName = try_get_value(annotations, ["name_cn"],
+                                  config.get(labels.get("alertname", ''), config.get('default'))['name'])
+
         action = annotations.get("Action", '')
         runbook_url = annotations.get("runbook_url", '')
         action_msg = ""
         if action:
             if runbook_url:
-                action_msg = ">处理建议: <font color=\"comment\"> {}</font> [more]({})  ".format(action, runbook_url)
+                action_msg = ">处理建议: <font color=\"comment\"> {}</font> [more]({})  ".format(runbook, runbook_url)
             else:
-                action_msg = '''>处理建议: <font color="comment">{}</font>  '''.format(action)
+                action_msg = '''>处理建议: <font color="comment">{}</font>  '''.format(runbook)
 
         msg = '''
 <font color="{_status_color}">{_status}</font>: [{_title}]({_alert_namager_url})  
 >级别: <font color="comment">{_severity}</font>  
 >资源: <font color="comment">{_resource}</font> [监控源]({_source})  
 >描述: <font color="comment">{_message}</font> 
+>告警开始时间: <font color="comment">{_startsAt}</font>
 {_action_msg}  
 \n
-'''.format(_title=labels.get("alertname", ' '), _resource=resource, _status_color=status_color, _status=status,
-           _message=message, _source=alert.get('generatorURL'), _action_msg=action_msg,
+'''.format(_title=alertName, _resource=resource, _status_color=status_color, _status=status,
+           _message=description, _source=alert.get('generatorURL'), _action_msg=action_msg,
            _severity=try_get_value(labels, ["Severity", "severity"], "critical"),
+           _startsAt=startsAt.to(os.getenv("TZ", "Asia/Shanghai")).format('YYYY-MM-DD HH:mm:ss'),
            _alert_namager_url=ALEAT_MANAGER_URL if ALEAT_MANAGER_URL else data.get('externalURL', ' '))
 
         result = send_wechat_msg(receiver, msg)
