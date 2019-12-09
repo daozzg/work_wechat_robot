@@ -14,6 +14,11 @@ alert_config = {
         "runbook": "如果收到该告警，表示监控正常"
     },
     # 应用
+    "CPUThrottlingHigh": {
+        "name": "应用CPU频繁达到限制阀值异常",
+        "description": "如果应用CPU在25%以上时间达到设定的限制阀值会触发该告警",
+        "runbook": "请查看应用实例监控信息，判断是否需要调整应用的limit中CPU的值"
+    },
     "KubeDeploymentGenerationMismatch": {
         "name": "应用实例版本不匹配",
         "description": "应用实例数量长时间未升级完成,目前处于老版本",
