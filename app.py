@@ -82,10 +82,9 @@ def prometheus_webhook():
         alertName = try_get_value(annotations, ["name_cn"],
                                   config.get(labels.get("alertname", ''), config.get('default'))['name'])
 
-        action = annotations.get("Action", '')
         runbook_url = annotations.get("runbook_url", '')
         action_msg = ""
-        if action:
+        if runbook:
             if runbook_url:
                 action_msg = ">处理建议: <font color=\"comment\"> {}</font> [more]({})  ".format(runbook, runbook_url)
             else:
