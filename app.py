@@ -74,6 +74,7 @@ def prometheus_webhook():
             namespace="{}/".format(labels.get("namespace")) if labels.get("namespace") else '',
             resource_name=resource_name)
         startsAt = arrow.get(alert.get("startsAt", ' '))
+        alert_source=try_get_value(labels,["alert_source"],'')
 
         description = try_get_value(annotations, ["description_cn"],
                                     config.get(labels.get("alertname", ''), config.get('default'))['description'])
@@ -93,12 +94,12 @@ def prometheus_webhook():
         msg = '''
 <font color="{_status_color}">{_status}</font>: [{_title}]({_alert_namager_url})  
 >级别: <font color="comment">{_severity}</font>  
->资源: <font color="comment">{_resource}</font> [监控源]({_source})  
+>资源: <font color="comment">{_resource}</font> [监控源]({_source}) 
 >描述: <font color="comment">{_message}</font> 
 >告警开始时间: <font color="comment">{_startsAt}</font>
 {_action_msg}  
 \n
-'''.format(_title=alertName, _resource=resource, _status_color=status_color, _status=status,
+'''.format(_title="{}: {}".format(alert_source,alertName), _resource=resource, _status_color=status_color, _status=status,
            _message=description, _source=alert.get('generatorURL'), _action_msg=action_msg,
            _severity=try_get_value(labels, ["Severity", "severity"], "critical"),
            _startsAt=startsAt.to(os.getenv("TZ", "Asia/Shanghai")).format('YYYY-MM-DD HH:mm:ss'),
